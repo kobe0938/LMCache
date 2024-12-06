@@ -78,18 +78,20 @@ async def route_request(request: Request):
         #     response = await client.post(machine_url, json=body, headers=headers)
         
         # return response.json()
-
+        headers = {k: v for k, v in request.headers.items() if k.lower() != 'user-id'}
+        
         async with httpx.AsyncClient() as client:
-            headers = {k: v for k, v in request.headers.items() if k.lower() != 'user-id'}
-            target_response = await client.post(machine_url, headers=headers, json=body)
-            # Return the target API's response back to the client
-            return Response(
-                content=target_response.content,
-                status_code=target_response.status_code,
-                headers=dict(target_response.headers),
-                media_type=target_response.headers.get(
-                    "content-type", "application/json")
-            )
-
+            try:
+                target_response = await client.post(machine_url, headers=headers, json=body)
+                return Response(
+                    content=target_response.content,
+                    status_code=target_response.status_code,
+                    headers=dict(target_response.headers),
+                    media_type=target_response.headers.get(
+                        "content-type", "application/json")
+                )
+            except httpx.RequestError as e:
+                print(f"Request failed: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Failed to communicate with D: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error routing request: {str(e)}")
