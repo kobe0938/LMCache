@@ -1,7 +1,7 @@
 import time
 import threading
 from queue import Queue
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from typing import Dict, Any
 import httpx
 from config import MACHINES, QPS_LIMIT
@@ -73,11 +73,23 @@ async def route_request(request: Request):
 
         wait_for_slot()
 
-        # Forward the request to the assigned machine
-        async with httpx.AsyncClient() as client:
-            response = await client.post(machine_url, json=body, headers=request.headers)
+        # # Forward the request to the assigned machine
+        # async with httpx.AsyncClient() as client:
+        #     response = await client.post(machine_url, json=body, headers=headers)
         
-        return response.json()
+        # return response.json()
+
+        async with httpx.AsyncClient() as client:
+            headers = {k: v for k, v in request.headers.items() if k.lower() != 'user-id'}
+            target_response = await client.post(machine_url, headers=headers, json=body)
+            # Return the target API's response back to the client
+            return Response(
+                content=target_response.content,
+                status_code=target_response.status_code,
+                headers=dict(target_response.headers),
+                media_type=target_response.headers.get(
+                    "content-type", "application/json")
+            )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error routing request: {str(e)}")

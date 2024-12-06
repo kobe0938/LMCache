@@ -1,8 +1,7 @@
 # config.py
 
 MACHINES = [
-    "http://127.0.0.1:8002",
-    "http://127.0.0.1:8002",
+    "https://api.deepinfra.com/v1/openai"
 ]
 
 QPS_LIMIT = 1
