@@ -1,8 +1,8 @@
 # config.py
 
 MACHINES = [
-    "http://localhost1:8000",
-    "http://localhost2:8000",
+    "http://127.0.0.1:8002",
+    "http://127.0.0.1:8002",
 ]
 
 QPS_LIMIT = 2
