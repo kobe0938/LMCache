@@ -11,11 +11,11 @@ app = FastAPI()
 # State management
 user_to_machine: Dict[str, int] = {}  # Maps user_id to machine index
 machine_request_counts = [0] * len(MACHINES)
-machine_queues = [Queue() for _ in MACHINES]
+machine_queues = [Queue() for _ in MACHINES] # TODO: fix queue not updated issue
 machine_locks = [threading.Lock() for _ in MACHINES]
-machine_timestamps = [[] for _ in MACHINES]  # Store request timestamps for each machine
+machine_timestamps = [[] for _ in MACHINES]  # Store request timestamps for each machine, 2d list
 
-# Throttling management
+# Throttling management, used for reset count only
 def reset_request_counts():
     while True:
         time.sleep(1)
@@ -23,7 +23,7 @@ def reset_request_counts():
             with machine_locks[i]:
                 machine_request_counts[i] = 0
 
-reset_thread = threading.Thread(target=reset_request_counts, daemon=True)
+reset_thread = threading.Thread(target=reset_request_counts, daemon=True) # separate thread, does not interfer with with main program
 reset_thread.start()
 
 # Status printer
@@ -38,7 +38,7 @@ def print_status():
             qps = len(machine_timestamps[i]) / 10  # Calculate QPS over the last 10 seconds
             print(f"Machine {i}: Queue Size = {queue.qsize()}, Requests in last second = {count}, QPS = {qps:.2f}")
 
-status_thread = threading.Thread(target=print_status, daemon=True)
+status_thread = threading.Thread(target=print_status, daemon=True) # separate thread, does not interfer with with main program
 status_thread.start()
 
 @app.post("/route")
