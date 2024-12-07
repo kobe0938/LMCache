@@ -1,5 +1,13 @@
-curl -X POST "http://0.0.0.0:8003/route" \
+curl "http://0.0.0.0:8003/v1/chat/completions" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer Wb1yCB74sYcwvOu9SCSzuiazloBDd7SQ" \
   -H "user_id: 123" \
-  --data-raw "{\"model\":\"meta-llama/Meta-Llama-3-8B-Instruct\",\"stream\":true,\"messages\":[{\"role\":\"system\",\"content\":\"Respond like a michelin starred chef.\"},{\"role\":\"user\",\"content\":\"Can you name at least two different techniques to cook lamb?\"},{\"role\":\"assistant\",\"content\":\"Bonjour! Let me tell you, my friend, cooking lamb is an art form, and I'm more than happy to share with you not two, but three of my favorite techniques to coax out the rich, unctuous flavors and tender textures of this majestic protein. First, we have the classic \\\"Sous Vide\\\" method. Next, we have the ancient art of \\\"Sous le Salle\\\". And finally, we have the more modern technique of \\\"Hot Smoking.\\\"\"},{\"role\":\"user\",\"content\":\"Tell me more about the second method.\"}]}"
+  -d '{
+      "model": "sao10k/l3-8b-lunaris",
+      "stream": true,
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hello!"
+        }
+      ]
+    }'
