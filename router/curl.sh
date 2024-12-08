@@ -1,4 +1,4 @@
-curl "http://0.0.0.0:8003/v1/chat/completions" \
+curl "http://0.0.0.0:8080/v1/chat/completions" \
   -H "Content-Type: application/json" \
   -H "user_id: 123" \
   -d '{
