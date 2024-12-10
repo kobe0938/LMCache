@@ -91,3 +91,9 @@ perf-test.py
 /docs/output/
 
 /try
+
+*.gitignore
+
+*.DS_Store
+
+/router/log_request_server
