@@ -35,6 +35,7 @@ def calculate_current_qps(machine_id: int) -> float:
     with machine_locks[machine_id]:
         for req_id in reversed(requests_on_each_machine[machine_id]):
             exec_time = request_table[req_id].get("execution_time")
+            # TODO: necessary? can be replaced by arrival time?
             if exec_time is None:
                 continue
             if current_time - exec_time <= TIME_WINDOW:
@@ -50,6 +51,7 @@ def calculate_total_qps(machine_id: int) -> float:
 
 def machine_worker(machine_id: int):
     while True:
+        # TODO: can give a smaller sleep time, otherwise the TTFT would be longer, TTFT' = TTFT(vllm) - optimized time + sleeping time
         time.sleep(0.1)
         current_qps = calculate_current_qps(machine_id)
         if current_qps < TARGET_QPS:
@@ -64,6 +66,7 @@ def process_request(machine_id: int, req_id: str):
     headers = {"user_id": user_id}
     try:
         with httpx.Client() as client:
+            # TODO: the logic here is twisted, 1. streaming response 2. execution time should be moved forward
             response = client.post(machine_url, json=body, headers=headers)
             request_table[req_id]["execution_time"] = time.time()
             with machine_locks[machine_id]:
@@ -73,7 +76,7 @@ def process_request(machine_id: int, req_id: str):
 
 def print_status():
     while True:
-        time.sleep(10)
+        time.sleep(TIME_WINDOW)
         total_users_assigned_to_machine = [0]*len(MACHINES)
         inverse_map = defaultdict(list)
         for u, m in user_to_machine.items():
@@ -94,6 +97,7 @@ def print_status():
 async def route_request(request: Request):
     try:
         body = await request.json()
+        # TODO: user_id may not be "user_id"
         user_id = request.headers.get("user_id")
         if not user_id:
             raise HTTPException(status_code=400, detail="user_id header is missing")
@@ -116,7 +120,8 @@ async def route_request(request: Request):
             requests_on_each_machine[machine_id].append(req_id)
         queues_on_each_machine[machine_id].put(req_id)
         user_request_count[user_id] += 1
-        return {"status": "queued", "request_id": req_id, "assigned_machine": machine_id}
+        # Need to return?
+        # return {"status": "queued", "request_id": req_id, "assigned_machine": machine_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
