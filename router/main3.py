@@ -34,11 +34,8 @@ def calculate_current_qps(machine_id: int) -> float:
     count = 0
     with machine_locks[machine_id]:
         for req_id in reversed(requests_on_each_machine[machine_id]):
-            exec_time = request_table[req_id].get("execution_time")
-            # TODO: necessary? can be replaced by arrival time?
-            if exec_time is None:
-                continue
-            if current_time - exec_time <= TIME_WINDOW:
+            arrival_time = request_table[req_id].get("arrival_time")
+            if current_time - arrival_time <= TIME_WINDOW:
                 count += 1
             else:
                 break
@@ -120,8 +117,6 @@ async def route_request(request: Request):
             requests_on_each_machine[machine_id].append(req_id)
         queues_on_each_machine[machine_id].put(req_id)
         user_request_count[user_id] += 1
-        # Need to return?
-        # return {"status": "queued", "request_id": req_id, "assigned_machine": machine_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
