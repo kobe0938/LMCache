@@ -12,6 +12,7 @@ import asyncio
 import csv
 from datetime import datetime
 import os
+import argparse
 
 MACHINES = [
     "http://machine0:8000",
@@ -35,22 +36,28 @@ user_request_count = defaultdict(int)
 
 def log_request_to_csv(request_data: Dict[str, Any], csv_file: str = "request_table.csv"):
     """Log request data to a CSV file."""
-    file_exists = os.path.exists(csv_file)
-    
-    with open(csv_file, mode='a', newline='') as file:
-        fieldnames = ['req_id', 'user_id', 'arrival_time', 'allocated_machine_id', 'timestamp']
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
+    try:
+        directory = os.path.dirname(os.path.abspath(csv_file))
+        os.makedirs(directory, exist_ok=True)
         
-        if not file_exists:
-            writer.writeheader()
+        file_exists = os.path.exists(csv_file)
         
-        writer.writerow({
-            'req_id': request_data['req_id'],
-            'user_id': request_data['user_id'],
-            'arrival_time': request_data['arrival_time'],
-            'allocated_machine_id': request_data['allocated_machine_id'],
-            'timestamp': datetime.now().isoformat()
-        })
+        with open(csv_file, mode='a', newline='', encoding='utf-8') as file:
+            fieldnames = ['req_id', 'user_id', 'arrival_time', 'allocated_machine_id', 'timestamp']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            
+            if not file_exists:
+                writer.writeheader()
+            
+            writer.writerow({
+                'req_id': request_data['req_id'],
+                'user_id': request_data['user_id'],
+                'arrival_time': request_data['arrival_time'],
+                'allocated_machine_id': request_data['allocated_machine_id'],
+                'timestamp': datetime.now().isoformat()
+            })
+    except Exception as e:
+        print(f"Error logging to CSV: {str(e)}")  # Add error logging
 
 def calculate_current_qps(machine_id: int) -> float:
     current_time = time.time()
@@ -97,7 +104,7 @@ def print_status():
         print("====================")
 
 
-async def process_request(request: Request, backend_url: str) -> asyncio.AsyncGenerator[bytes, None]:
+async def process_request(request: Request, backend_url: str):
     """
     Async generator to stream data from the backend server to the client.
     This replaces the synchronous process_request function and should be called
@@ -141,35 +148,31 @@ async def route_request(request: Request):
         else:
             machine_id = user_to_machine[user_id]
 
-        request_table[req_id]["allocated_machine_id"] = machine_id
-
         with machine_locks[machine_id]:
             requests_on_each_machine[machine_id].append(req_id)
             machine_processed_count[machine_id] += 1
 
         user_request_count[user_id] += 1
-
         request_table[req_id] = {
             "user_id": user_id,
             "body": body,
             "arrival_time": arrival_time,
             "allocated_machine_id": machine_id,
-        }
-
+        } 
         log_data = request_table[req_id].copy()
         log_data['req_id'] = req_id
         log_request_to_csv(log_data)
 
         backend_url = MACHINES[machine_id]
-        stream_generator = process_request(request, backend_url)
+        # stream_generator = process_request(request, backend_url)
 
-        headers, status_code = await anext(stream_generator)
+        # headers, status_code = await anext(stream_generator)
 
-        return StreamingResponse(
-                stream_generator,
-                status_code=status_code,
-                headers={key: value for key, value in headers.items() if key.lower() not in {"transfer-encoding"}},
-            )
+        # return StreamingResponse(
+        #         stream_generator,
+        #         status_code=status_code,
+        #         headers={key: value for key, value in headers.items() if key.lower() not in {"transfer-encoding"}},
+        #     )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
