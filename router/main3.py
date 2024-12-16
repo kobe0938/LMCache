@@ -64,7 +64,7 @@ def process_request(machine_id: int, req_id: str):
     try:
         with httpx.Client() as client:
             # TODO: the logic here is twisted, 1. streaming response 2. execution time should be moved forward
-            response = client.post(machine_url, json=body, headers=headers)
+            # response = client.post(machine_url, json=body, headers=headers)
             request_table[req_id]["execution_time"] = time.time()
             with machine_locks[machine_id]:
                 machine_processed_count[machine_id] += 1
@@ -90,7 +90,7 @@ def print_status():
         print(f"Overall: Total Requests={total_requests}, Unique Users={unique_users}")
         print("====================")
 
-@app.post("/route")
+@app.post("/chat/completions")
 async def route_request(request: Request):
     try:
         body = await request.json()
@@ -128,4 +128,4 @@ status_thread = threading.Thread(target=print_status, daemon=True)
 status_thread.start()
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=9000)
