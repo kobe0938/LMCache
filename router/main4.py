@@ -9,6 +9,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 import uvicorn
 import asyncio
+import csv
+from datetime import datetime
+import os
 
 MACHINES = [
     "http://machine0:8000",
@@ -29,6 +32,25 @@ machine_locks = [threading.Lock() for _ in MACHINES]
 machine_processed_count = [0 for _ in MACHINES]
 start_time = time.time()
 user_request_count = defaultdict(int)
+
+def log_request_to_csv(request_data: Dict[str, Any], csv_file: str = "request_table.csv"):
+    """Log request data to a CSV file."""
+    file_exists = os.path.exists(csv_file)
+    
+    with open(csv_file, mode='a', newline='') as file:
+        fieldnames = ['req_id', 'user_id', 'arrival_time', 'allocated_machine_id', 'timestamp']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        
+        if not file_exists:
+            writer.writeheader()
+        
+        writer.writerow({
+            'req_id': request_data['req_id'],
+            'user_id': request_data['user_id'],
+            'arrival_time': request_data['arrival_time'],
+            'allocated_machine_id': request_data['allocated_machine_id'],
+            'timestamp': datetime.now().isoformat()
+        })
 
 def calculate_current_qps(machine_id: int) -> float:
     current_time = time.time()
@@ -109,13 +131,6 @@ async def route_request(request: Request):
 
         req_id = str(uuid.uuid4())
         arrival_time = time.time()
-        request_table[req_id] = {
-            "user_id": user_id,
-            "body": body,
-            "arrival_time": arrival_time,
-            "allocated_machine_id": None,
-            "execution_time": None
-        }
 
         if user_id not in user_to_machine:
             machine_id = min(
@@ -133,6 +148,17 @@ async def route_request(request: Request):
             machine_processed_count[machine_id] += 1
 
         user_request_count[user_id] += 1
+
+        request_table[req_id] = {
+            "user_id": user_id,
+            "body": body,
+            "arrival_time": arrival_time,
+            "allocated_machine_id": machine_id,
+        }
+
+        log_data = request_table[req_id].copy()
+        log_data['req_id'] = req_id
+        log_request_to_csv(log_data)
 
         backend_url = MACHINES[machine_id]
         stream_generator = process_request(request, backend_url)
