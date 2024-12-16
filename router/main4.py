@@ -5,8 +5,10 @@ from collections import deque, defaultdict
 from queue import Queue
 from typing import Dict, Any
 import httpx
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
 import uvicorn
+import asyncio
 
 MACHINES = [
     "http://machine0:8000",
@@ -23,7 +25,6 @@ user_to_machine: Dict[str, int] = {}
 request_table: Dict[str, Dict[str, Any]] = {}
 
 requests_on_each_machine = [deque() for _ in range(len(MACHINES))]
-queues_on_each_machine = [Queue() for _ in MACHINES]
 machine_locks = [threading.Lock() for _ in MACHINES]
 machine_processed_count = [0 for _ in MACHINES]
 start_time = time.time()
@@ -48,28 +49,12 @@ def calculate_total_qps(machine_id: int) -> float:
 
 def machine_worker(machine_id: int):
     while True:
-        # TODO: can give a smaller sleep time, otherwise the TTFT would be longer, TTFT' = TTFT(vllm) - optimized time + sleeping time
         time.sleep(0.1)
         current_qps = calculate_current_qps(machine_id)
-        if current_qps < TARGET_QPS:
-            if not queues_on_each_machine[machine_id].empty():
-                req_id = queues_on_each_machine[machine_id].get()
-                process_request(machine_id, req_id)
+        if current_qps > TARGET_QPS:
+            # TODO: Still processing the request. But this's a good time to 1. send out the warning to add more GPUs 2. or investigate whether requests are to centerlized into certain GPUs
+            pass
 
-def process_request(machine_id: int, req_id: str):
-    user_id = request_table[req_id]["user_id"]
-    body = request_table[req_id]["body"]
-    machine_url = MACHINES[machine_id]
-    headers = {"user_id": user_id}
-    try:
-        with httpx.Client() as client:
-            # TODO: streaming response
-            request_table[req_id]["execution_time"] = time.time()
-            # response = client.post(machine_url, json=body, headers=headers)
-            with machine_locks[machine_id]:
-                machine_processed_count[machine_id] += 1
-    except Exception as e:
-        print(f"Error processing request {req_id} on machine {machine_id}: {e}")
 
 def print_status():
     while True:
@@ -82,22 +67,46 @@ def print_status():
             total_users_assigned_to_machine[i] = len(inverse_map[i])
         for i in range(len(MACHINES)):
             qps = calculate_current_qps(i)
-            total_q = queues_on_each_machine[i].qsize()
             total_qps = calculate_total_qps(i)
-            print(f"Machine {i}: Current QPS={qps:.2f}, Total QPS={total_qps:.2f}, Queue Size={total_q}, Assigned Users={total_users_assigned_to_machine[i]}")
+            print(f"Machine {i}: Current QPS={qps:.2f}, Total QPS={total_qps:.2f}, Assigned Users={total_users_assigned_to_machine[i]}")
         total_requests = sum(user_request_count.values())
         unique_users = len(user_request_count)
         print(f"Overall: Total Requests={total_requests}, Unique Users={unique_users}")
         print("====================")
 
+
+async def process_request(request: Request, backend_url: str) -> asyncio.AsyncGenerator[bytes, None]:
+    """
+    Async generator to stream data from the backend server to the client.
+    This replaces the synchronous process_request function and should be called
+    directly by the route handler.
+    """
+    client = httpx.AsyncClient()
+    async with client.stream(
+        method=request.method,
+        url=backend_url,
+        headers=dict(request.headers),
+        content=await request.body(),
+    ) as backend_response:
+
+        # Pass response headers to the client
+        yield backend_response.headers, backend_response.status_code
+
+        # Stream response content
+        async for chunk in backend_response.aiter_bytes():
+            yield chunk
+
+    await client.aclose()
+
+
 @app.post("/chat/completions")
 async def route_request(request: Request):
     try:
         body = await request.json()
-        # TODO: user_id may not be "user_id"
         user_id = request.headers.get("x-flow-user-id")
         if not user_id:
             raise HTTPException(status_code=400, detail="user_id header is missing")
+
         req_id = str(uuid.uuid4())
         arrival_time = time.time()
         request_table[req_id] = {
@@ -107,18 +116,38 @@ async def route_request(request: Request):
             "allocated_machine_id": None,
             "execution_time": None
         }
+
         if user_id not in user_to_machine:
-            machine_id = min(range(len(MACHINES)), key=lambda i: queues_on_each_machine[i].qsize())
+            machine_id = min(
+                range(len(MACHINES)),
+                key=lambda i: calculate_current_qps(i)
+            )
             user_to_machine[user_id] = machine_id
         else:
             machine_id = user_to_machine[user_id]
+
         request_table[req_id]["allocated_machine_id"] = machine_id
+
         with machine_locks[machine_id]:
             requests_on_each_machine[machine_id].append(req_id)
-        queues_on_each_machine[machine_id].put(req_id)
+            machine_processed_count[machine_id] += 1
+
         user_request_count[user_id] += 1
+
+        backend_url = MACHINES[machine_id]
+        stream_generator = process_request(request, backend_url)
+
+        headers, status_code = await anext(stream_generator)
+
+        return StreamingResponse(
+                stream_generator,
+                status_code=status_code,
+                headers={key: value for key, value in headers.items() if key.lower() not in {"transfer-encoding"}},
+            )
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 for i in range(len(MACHINES)):
     t = threading.Thread(target=machine_worker, args=(i,), daemon=True)
