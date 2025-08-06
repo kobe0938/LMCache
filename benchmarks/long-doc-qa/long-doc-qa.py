@@ -229,8 +229,7 @@ async def main(args):
     client = AsyncOpenAI(
         base_url=f"http://localhost:{args.port}/v1", api_key="sk-dummy"
     )
-    model = "openai/gpt-oss-120b"
-    # model = "meta-llama/Llama-3.1-8B-Instruct"
+    model = args.model
 
     print("------warm up round------")
     _ = await test_long_document_qa(
@@ -263,6 +262,13 @@ def create_argument_parser():
     parser = argparse.ArgumentParser(
         description="Benchmark the performance with or "
         "without automatic prefix caching."
+    )
+
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="openai/gpt-oss-120b",
+        help="Model to use for testing.",
     )
 
     parser.add_argument(
