@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+# Adapted from
+# https://github.com/vllm-project/vllm/blob/main/benchmarks/benchmark_long_document_qa_throughput.py
 """
 Commandline arguments:
     --num-documents: The number of documents to sample prompts from.
@@ -26,6 +28,8 @@ Commandline arguments:
     --port: Port to query the vLLM server
 
     --max-inflight-requests: Maximum number of in-flight requests. Default is 2
+
+    --model: Model name
 """
 
 # Standard
