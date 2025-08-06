@@ -29,6 +29,9 @@ Commandline arguments:
 
     --max-inflight-requests: Maximum number of in-flight requests. Default is 2
 
+    --sleep-time-after-warmup: Sleep time after warm up iteration.
+                              (Optional, default: 0.0 seconds)
+
     --model: Model name
 """
 
@@ -219,6 +222,22 @@ def repeat_prompts(prompts, repeat_count, mode: str):
 async def main(args):
     random.seed(args.shuffle_seed)
 
+    # Create the OpenAI client
+    client = AsyncOpenAI(
+        base_url=f"http://localhost:{args.port}/v1", api_key="sk-dummy"
+    )
+    model = args.model
+
+    pre_warmup_prompts = [str(i) + "xx" + " ".join(["hi"] * 1000) for i in range(5)]
+
+    await test_long_document_qa(
+        client=client,
+        model=model,
+        prompts=pre_warmup_prompts,
+        output_len=args.output_len,
+        max_inflight_requests=args.max_inflight_requests,
+    )
+
     # Prepare the prompts:
     # we append the document id at the beginning to avoid any of the document
     # being the prefix of other documents
@@ -229,12 +248,6 @@ async def main(args):
 
     prompts = repeat_prompts(warmup_prompts, args.repeat_count, mode=args.repeat_mode)
 
-    # Create the OpenAI client
-    client = AsyncOpenAI(
-        base_url=f"http://localhost:{args.port}/v1", api_key="sk-dummy"
-    )
-    model = args.model
-
     print("------warm up round------")
     _ = await test_long_document_qa(
         client=client,
@@ -243,6 +256,12 @@ async def main(args):
         output_len=args.output_len,
         max_inflight_requests=args.max_inflight_requests,
     )
+
+    sleep_time_after_warmup = args.sleep_time_after_warmup
+    if sleep_time_after_warmup > 0:
+        print(f"Sleeping for {sleep_time_after_warmup} seconds after warmup...")
+        time.sleep(sleep_time_after_warmup)
+
     print("------query round------")
     benchmark_start_time = time.time()
     benchmark_ttfts = await test_long_document_qa(
@@ -333,6 +352,13 @@ def create_argument_parser():
         type=int,
         default=2,
         help="Maximum number of concurrent inflight requests",
+    )
+
+    parser.add_argument(
+        "--sleep-time-after-warmup",
+        type=float,
+        default=0.0,
+        help="Sleep time after warm up iteration",
     )
 
     return parser
