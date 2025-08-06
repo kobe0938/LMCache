@@ -28,11 +28,15 @@ Commandline arguments:
     --max-inflight-requests: Maximum number of in-flight requests. Default is 2
 """
 
+# Standard
+import argparse
+import asyncio
 import random
 import time
-import asyncio
-import argparse
+
+# Third Party
 from openai import AsyncOpenAI
+
 
 def has_content(chunk):
     """
@@ -47,8 +51,12 @@ def has_content(chunk):
     return (
         chunk.choices
         and chunk.choices[0].delta
-        and (chunk.choices[0].delta.content is not None or chunk.choices[0].delta.reasoning_content is not None)
+        and (
+            chunk.choices[0].delta.content is not None
+            or chunk.choices[0].delta.reasoning_content is not None
+        )
     )
+
 
 def extract_content(chunk):
     """
@@ -67,7 +75,10 @@ def extract_content(chunk):
     else:
         return ""
 
-async def process_single_prompt(client, model, prompt, prompt_index, total_prompts, output_len, semaphore):
+
+async def process_single_prompt(
+    client, model, prompt, prompt_index, total_prompts, output_len, semaphore
+):
     """
     Process a single prompt with the given client and model.
 
@@ -84,7 +95,7 @@ async def process_single_prompt(client, model, prompt, prompt_index, total_promp
         float: Time-to-first-token measurement
     """
     async with semaphore:  # Acquire semaphore to limit concurrent requests
-        print(f"\n--- Sending prompt {prompt_index+1}/{total_prompts} ---")
+        print(f"\n--- Sending prompt {prompt_index + 1}/{total_prompts} ---")
         start_time = time.time()
         first_token_time = None
         words = ""
@@ -100,7 +111,6 @@ async def process_single_prompt(client, model, prompt, prompt_index, total_promp
 
         responses = []
         # Collect the response chunks
-        idx = 0
         async for chunk in response:
             if not chunk.choices:
                 continue
@@ -123,7 +133,9 @@ async def process_single_prompt(client, model, prompt, prompt_index, total_promp
             return 0.0
 
 
-async def test_long_document_qa(client, model, prompts=None, output_len=100, max_inflight_requests=10):
+async def test_long_document_qa(
+    client, model, prompts=None, output_len=100, max_inflight_requests=10
+):
     """
     Test long document QA with the given prompts and sampling parameters.
     Process prompts concurrently with a limit on inflight requests.
@@ -151,7 +163,7 @@ async def test_long_document_qa(client, model, prompts=None, output_len=100, max
             prompt_index=i,
             total_prompts=len(prompts),
             output_len=output_len,
-            semaphore=semaphore
+            semaphore=semaphore,
         )
         tasks.append(task)
 
@@ -213,22 +225,21 @@ async def main(args):
 
     prompts = repeat_prompts(warmup_prompts, args.repeat_count, mode=args.repeat_mode)
 
-
     # Create the OpenAI client
-    client = AsyncOpenAI(base_url=f"http://localhost:{args.port}/v1", api_key="sk-dummy")
+    client = AsyncOpenAI(
+        base_url=f"http://localhost:{args.port}/v1", api_key="sk-dummy"
+    )
     model = "openai/gpt-oss-120b"
-    #model = "meta-llama/Llama-3.1-8B-Instruct"
+    # model = "meta-llama/Llama-3.1-8B-Instruct"
 
     print("------warm up round------")
-    warmup_start_time = time.time()
-    warmup_ttfts = await test_long_document_qa(
+    _ = await test_long_document_qa(
         client=client,
         model=model,
         prompts=warmup_prompts,
         output_len=args.output_len,
         max_inflight_requests=args.max_inflight_requests,
     )
-    warmup_end_time = time.time()
     print("------query round------")
     benchmark_start_time = time.time()
     benchmark_ttfts = await test_long_document_qa(
@@ -241,12 +252,12 @@ async def main(args):
     benchmark_end_time = time.time()
 
     # Print results
-    warmup_mean_ttft = sum(warmup_ttfts) / len(warmup_ttfts)
     query_mean_ttft = sum(benchmark_ttfts) / len(benchmark_ttfts)
-    print(f"\n=== BENCHMARK RESULTS ===")
+    print("\n=== BENCHMARK RESULTS ===")
     print(f"Query round mean TTFT: {query_mean_ttft:.3f}s")
     print(f"Query round time: {benchmark_end_time - benchmark_start_time:.3f}s")
     print(f"Query round prompt count: {len(benchmark_ttfts)}")
+
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
@@ -274,7 +285,7 @@ def create_argument_parser():
         "--output-len",
         type=int,
         default=100,
-        help="Maximum number of tokens to generate for each prompt."
+        help="Maximum number of tokens to generate for each prompt.",
     )
 
     parser.add_argument(
