@@ -171,7 +171,7 @@ async def zmq_pull_server():
             msg_bytes = await socket.recv()
             msg = msgspec.msgpack.decode(msg_bytes, type=NixlMsg)
             req_id = msg.req_id
-            app.state.finished_reqs.add(req_id)
+            app.state.finished_reqs[req_id] += 1
             logger.debug(f"Prefill of req {req_id} done.")
         except zmq.Again:
             await asyncio.sleep(0.01)  # Avoid busy loop
