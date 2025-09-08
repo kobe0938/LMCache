@@ -409,7 +409,6 @@ async def handle_chat_completions(request: Request):
                         "finish_reason": None,
                     }
                 ],
-                "usage": None,
             }
             yield (
                 "data: " + json.dumps(initial_chunk, separators=(",", ":")) + "\n\n"
@@ -428,7 +427,6 @@ async def handle_chat_completions(request: Request):
                         "finish_reason": None,
                     }
                 ],
-                "usage": None,
             }
             yield (
                 "data: " + json.dumps(head_chunk, separators=(",", ":")) + "\n\n"
@@ -469,7 +467,6 @@ async def handle_chat_completions(request: Request):
                                         ].get("finish_reason"),
                                     }
                                 ],
-                                "usage": completion_data.get("usage"),
                             }
                             converted_chunk = (
                                 "data: "
