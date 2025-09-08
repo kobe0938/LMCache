@@ -11,8 +11,8 @@ if [[ $# -lt 1 ]]; then
 fi
 
 if [[ $# -eq 1 ]]; then
-    echo "Using default model: Qwen/Qwen3-8B"
-    MODEL="Qwen/Qwen3-8B"
+    echo "Using default model: meta-llama/Llama-3.1-8B-Instruct"
+    MODEL="meta-llama/Llama-3.1-8B-Instruct"
 else
     echo "Using model: $2"
     MODEL=$2

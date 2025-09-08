@@ -324,18 +324,6 @@ async def handle_completions(request: Request):
         raise
 
 
-# FIXME (Jiayi): chat completion support need to apply prompt template
-# NOTE (Kobe): Observation: For chat completions requests, in _preprocess_chat function in vllm/entrypoints/openai/serving_engine.py,  # noqa: E501
-# it will first apply chat template to the messages and then tokenize the prompt.
-# e.g. in _preprocess_chat:
-# Input messages (messages):
-# [{'content': 'You are a helpful assistant.', 'role': 'system'}, {'content': 'Explain quantum computing in simple terms.', 'role': 'user'}]  # noqa: E501
-# Output request_prompt (request_prompt):
-# '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nExplain quantum computing in simple terms.<|im_end|>\n<|im_start|>assistant\n'  # noqa: E501
-# Output engine_prompt (engine_prompt):
-# {'prompt_token_ids': [151644, 8948, 198, 2610, 525, 264, 10950, 17847, 13, 151645, 198, 151644, 872, 198, 840, 20772, 30128, 24231, 304, 4285, 3793, 13, 151645, 198, 151644, 77091, 198]}  # noqa: E501
-# The above token_ids are the same as the ones from the /tokenize endpoint. The output of /chat/completions is also the same as the one in /tokenize -> /completions.  # noqa: E501
-# Considering many other constraints in the lmcache prefiller and decoder(nixl_connector_v3.py), we apply the similar logic as the one in the /completions endpoint.  # noqa: E501
 @app.post("/v1/chat/completions")
 async def handle_chat_completions(request: Request):
     global counter, stats_calculator
