@@ -23,8 +23,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
-          # for setuptools-scm
+          # Full git history needed for sphinx-multiversion to detect all tags/branches
           fetch-depth: 0
+          # Fetch all branches and tags
+          fetch-tags: true
 
       - name: Setup Python 3.13
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -36,9 +38,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements/docs.txt
 
-      - name: Build Sphinx Documentation
+      - name: Build Versioned Sphinx Documentation
         run: |
-          sphinx-build docs/source output
+          sphinx-multiversion docs/source output
         continue-on-error: false
 
       - name: Add .nojekyll
