@@ -10,6 +10,7 @@ on:
      - 'docs/**'
      - 'lmcache/**'
      - 'examples/**'
+     - '.github/workflows/build_doc.yml'
 jobs:
   build-docs:
     name: Build docs
