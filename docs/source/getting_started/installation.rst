@@ -17,8 +17,8 @@ Prerequisites
 .. note::
     LMCache does not support Windows natively. To run LMCache on Windows, you can use the Windows Subsystem for Linux (WSL) with a compatible Linux distribution, or use some community-maintained forks.
 
-Install Stable LMCache from PyPI
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+(Recommended) Install Stable LMCache from PyPI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The simplest way to install the latest stable release of LMCache is through PyPI.
 If you require a different version of torch for the LMCache instance that you built with (symbol undefined error), please follow the install from source instructions below.
@@ -28,25 +28,9 @@ If you require a different version of torch for the LMCache instance that you bu
     # LMCache wheels are built with the latest version of torch.
     pip install lmcache
 
-**Compatibility Matrix:** 
+.. important::
 
-This compatibility matrix accounts for dependencies as well as connector API changes. Please raise an issue on GitHub if you encounter any incompatibilities.
-
-.. csv-table::
-   :header: "", "LMCache 0.3.5 (Aug 28)", "LMCache 0.3.4 (Aug 24)", "LMCache 0.3.3 (Aug 1)", "LMCache 0.3.2 (Jul 14)", "LMCache 0.3.1 (June 25)", "LMCache 0.3.0 (May 28)"
-   :widths: 20, 15, 15, 15, 15, 15, 15
-
-   "vLLM 0.10.1.x (Aug 19)", "✅", "❌", "✅", "✅", "✅", "❌"
-   "vLLM 0.10.0.x (Jul 24)", "✅", "❌", "✅", "✅", "✅", "❌"
-   "vLLM 0.9.2.x (Jul 3)", "✅", "❌", "✅", "✅", "✅", "❌"
-   "vLLM 0.9.1.x (June 10)", "✅", "❌", "✅", "✅", "❌", "❌"
-   "vLLM 0.9.0.x (May 14)", "✅", "❌", "✅", "✅", "❌", "❌"
-   "vLLM 0.8.5.x (Apr 28)", "✅", "❌", "✅", "✅", "❌", "✅"
-
-
-Notable Change List: 
-
-* June 30: vLLM Cached Req Scheduler Output Changes https://github.com/vllm-project/vllm/pull/20232 and https://github.com/vllm-project/vllm/pull/20291
+   You're all set! You can now start using LMCache. For hands-on guides and more usage examples, see the :ref:`quickstart_examples` section.
 
 
 Install Latest LMCache from TestPyPI
@@ -165,6 +149,27 @@ LMCache with vLLM v0
 .. note::
     LMCache is also integrated with vLLM v0. Refer to `the example in vLLM <https://github.com/vllm-project/vllm/blob/main/examples/others/lmcache/cpu_offload_lmcache.py>`__.
     See the `examples README <https://github.com/vllm-project/vllm/tree/main/examples/others/lmcache#2-cpu-offload-examples>`_ to understand how to run the script for vLLM v0.
+
+Compatibility Matrix
+~~~~~~~~~~~~~~~~~~~~
+
+This compatibility matrix accounts for dependencies as well as connector API changes. Please raise an issue on GitHub if you encounter any incompatibilities.
+
+.. csv-table::
+   :header: "", "LMCache 0.3.5 (Aug 28)", "LMCache 0.3.4 (Aug 24)", "LMCache 0.3.3 (Aug 1)", "LMCache 0.3.2 (Jul 14)", "LMCache 0.3.1 (June 25)", "LMCache 0.3.0 (May 28)"
+   :widths: 20, 15, 15, 15, 15, 15, 15
+
+   "vLLM 0.10.1.x (Aug 19)", "✅", "❌", "✅", "✅", "✅", "❌"
+   "vLLM 0.10.0.x (Jul 24)", "✅", "❌", "✅", "✅", "✅", "❌"
+   "vLLM 0.9.2.x (Jul 3)", "✅", "❌", "✅", "✅", "✅", "❌"
+   "vLLM 0.9.1.x (June 10)", "✅", "❌", "✅", "✅", "❌", "❌"
+   "vLLM 0.9.0.x (May 14)", "✅", "❌", "✅", "✅", "❌", "❌"
+   "vLLM 0.8.5.x (Apr 28)", "✅", "❌", "✅", "✅", "❌", "✅"
+
+
+Notable Change List: 
+
+* June 30: vLLM Cached Req Scheduler Output Changes https://github.com/vllm-project/vllm/pull/20232 and https://github.com/vllm-project/vllm/pull/20291
 
 Setup using Docker
 ------------------
