@@ -60,8 +60,8 @@ jobs:
       - name: Auto translate with AI
         env:
           # Choose one API according to your needs
-          ANYROUTER_API_KEY: ${{ secrets.ANYROUTER_API_KEY }}
-          # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # ANYROUTER_API_KEY: ${{ secrets.ANYROUTER_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           FORCE_FLAG=""
@@ -70,7 +70,7 @@ jobs:
           fi
           
           python tools/auto_translate.py \
-            --api anyrouter \
+            --api openai \
             --target-lang ${{ github.event.inputs.target_lang || 'zh_CN' }} \
             --error-threshold 0.3 \
             $FORCE_FLAG
